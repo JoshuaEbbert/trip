@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 
-python -m trip.tools.torsion_benchmark --gpu 0 --start 0 --stop 60 &\
-python -m trip.tools.torsion_benchmark --gpu 1 --start 60 --stop 120 &\
-python -m trip.tools.torsion_benchmark --gpu 2 --start 120 --stop 180 &\
-python -m trip.tools.torsion_benchmark --gpu 3 --start 180 --stop 240 &\
-python -m trip.tools.torsion_benchmark --gpu 4 --start 240 --stop 300 &\
-python -m trip.tools.torsion_benchmark --gpu 5 --start 300 --stop 360 &\
-python -m trip.tools.torsion_benchmark --gpu 6 --start 360 --stop 420 &\
-python -m trip.tools.torsion_benchmark --gpu 7 --start 420 --stop 482
-
+python -m trip.tools.torsion_benchmark --gpu 0 --start 0 --stop 110 --model_file /results/trip2_vanilla.pth &\
+python -m trip.tools.torsion_benchmark --gpu 1 --start 110 --stop 220 --model_file /results/trip2_vanilla.pth &\   
+python -m trip.tools.torsion_benchmark --gpu 2 --start 220 --stop 330 --model_file /results/trip2_vanilla.pth &\   
+python -m trip.tools.torsion_benchmark --gpu 3 --start 330 --stop 439 --model_file /results/trip2_vanilla.pth &\   
+python -m trip.tools.torsion_benchmark --gpu 4 --start 439 --stop 548 --model_file /results/trip2_vanilla.pth &\   
+python -m trip.tools.torsion_benchmark --gpu 5 --start 548 --stop 657 --model_file /results/trip2_vanilla.pth &\
+python -m trip.tools.torsion_benchmark --gpu 6 --start 657 --stop 766 --model_file /results/trip2_vanilla.pth &\
+python -m trip.tools.torsion_benchmark --gpu 7 --start 766 --stop 875 --model_file /results/trip2_vanilla.pth

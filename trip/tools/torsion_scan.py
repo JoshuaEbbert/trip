@@ -8,7 +8,7 @@ import networkx as nx
 
 import torch
 
-from trip.tools import TrIPModule
+from trip.tools import TrIPModule  
 from trip.tools.constraints import DihedralConstraint
 from trip.tools.utils import get_species
 
@@ -34,11 +34,11 @@ class TorsionScanner:
         # Create general system
         u = universe.copy()
         u.atoms.guess_bonds()
-        symbols = u.atoms.elements
+        symbols = u.atoms.elements 
         self.species = get_species(symbols)  # This is for module
 
         # Create dihedral
-        self.atom_nums = atom_nums
+        self.atom_nums = atom_nums 
         dih = u.atoms[atom_nums].dihedral
 
         # Select part of molecule to rotate
@@ -57,9 +57,11 @@ class TorsionScanner:
         self.dih = dih
         self.tail = tail
         self.u = u
-
-    def min(self, module, angle=None, device='cuda'):
+        
+def min(self, module, angle=None, device='cuda'):
         module.species_tensor = torch.tensor(self.species, dtype=torch.long, device='cuda')
+        # for atom in self.dih:
+        #    print(atom, atom.position)
         if angle is not None:
             self.tail.rotateby(angle - self.dih.value(), self.bvec, point=self.center.position)
         module.constraints = [DihedralConstraint(self.atom_nums, self.dih.value() * 3.14159 / 180, device, 1)]
@@ -67,15 +69,15 @@ class TorsionScanner:
         boxsize = torch.full((3,), float('inf'), dtype=torch.float, device=device)
         for k in [1, 10, 100]:
              angle = module.constraints[0].k = k
-             pos = module.minimize(pos, boxsize)
-        
+             pos = module.minimize(pos.detach(), boxsize)
+
         with torch.no_grad():
             angle = module.constraints[0].calc_quantity(pos)
             energy = module.forward(pos, boxsize, forces=False)
 
-        return pos, angle, energy
+        return pos, angle, energy  
 
-        
+
 
 if __name__ == '__main__':
     # Setup
@@ -86,7 +88,7 @@ if __name__ == '__main__':
     logging.info('===============================')
 
     device = f'cuda:{args.gpu}'
-    torch.cuda.set_device(device)
+    torch.cuda.set_device(device)  
 
     # Construct system
     universe = mda.Universe(args.pdb)
@@ -95,14 +97,14 @@ if __name__ == '__main__':
     module = TrIPModule(torsion_scanner.species, **vars(args))
 
     # Run calculations
-    energies = np.empty(36)
+    energies = np.empty(72)
     angles = np.empty_like(energies)
-    for i in range(36):
-        logging.info(f'Step {i}')
-        _, angle, energy = torsion_scanner.min(module, angle=10*i)
+    for i in range(72):
+        logging.info(f'Step {i}')  
+        _, angle, energy = torsion_scanner.min(module, angle=5*i)
         angles[i] = angle
         energies[i] = energy
-    
+
     # Save data
     base = os.path.join(args.out, args.label + '_torsion')
     np.savez(base + '.npz', angles=angles, energies=energies)

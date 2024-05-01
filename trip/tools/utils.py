@@ -1,5 +1,7 @@
 from trip.data import AtomicData
-
+import os
+from openmm.app import PDBFile
+from openmm.unit import angstrom
 
 def get_species(symbols):
     symbol_list = AtomicData.get_symbols_list()
@@ -9,5 +11,4 @@ def get_species(symbols):
 
 def save_pdb(pos, topo, name, out, **args):
     with open(os.path.join(out, name+'.pdb'), 'w') as f:
-        pdbfile.PDBFile.writeFile(topo, pos*angstrom, f)
-        
+        PDBFile.writeFile(topo, pos*angstrom, f)

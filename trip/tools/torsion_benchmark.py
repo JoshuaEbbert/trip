@@ -72,7 +72,7 @@ if __name__ == '__main__':
                       'energy': []}}
 
     # Run calculations
-    element_filter = ElementFilter(allowed_elements=['H','C','N','O'])  # Filter out wrong atom types
+    element_filter = ElementFilter(allowed_elements=['H','C','N','O', 'F', 'S', 'Cl'])  # Filter out wrong atom types
     torsion_drive_result_collection = TorsionDriveResultCollection.parse_file(args.json)
     torsion_drive_result_collection = torsion_drive_result_collection.filter(element_filter)
     torsion_drive_records = torsion_drive_result_collection.to_records()

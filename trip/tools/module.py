@@ -3,6 +3,7 @@ import logging
 from scipy.optimize import minimize
 import torch
 from torch.autograd.functional import hessian
+import numpy as np
 
 import torchani
 
@@ -10,13 +11,13 @@ from trip.data_loading import GraphConstructor
 from trip.model import TrIP
 
 
-class TrIPModule(torch.nn.Module):
+class TrIPModule(torch.nn.Module): 
     def __init__(self, species, model_file, gpu, constraints=[], **vars):
-        super().__init__() 
+        super().__init__()
         self.device = f'cuda:{gpu}'
         self.species_tensor = torch.tensor(species, dtype=torch.long, device=self.device)
         self.constraints = constraints
-        if model_file == 'ani2x':
+        if model_file == 'ani2x':  
             self.model = torchani.models.ANI2x(periodic_table_index=True).to(self.device)
             self.forward = self.ani_forward
         else:
@@ -46,36 +47,47 @@ class TrIPModule(torch.nn.Module):
             return energy.item()
 
     def energy_np(self, pos, boxsize):
-        pos = torch.tensor(pos, dtype=torch.float, device=self.device).reshape(-1,3)
+        pos = pos.clone().detach().to(self.device).reshape(-1,3)
         with torch.no_grad():
             energy = self.forward(pos, boxsize=boxsize, forces=False)
         energy += self.calc_constraints(pos)
-        return energy.item()
+        if self.forward == self.ani_forward:
+            try:    
+                energy = energy.item()
+            except AttributeError: 
+                pass
+
+        return energy
 
     def jac_np(self, pos, boxsize):
         pos = torch.tensor(pos, dtype=torch.float, device=self.device).reshape(-1,3)
         _, forces = self.forward(pos, boxsize=boxsize)
-        pos.requires_grad_(True)
+        pos.requires_grad_(True)   
         error = self.calc_constraints(pos)
-        jac = torch.autograd.grad(error, pos)[0] - forces
+        if error == 0:
+            jac = torch.zeros_like(pos)
+        else:
+            jac = torch.autograd.grad(error, pos, create_graph=True)[0]
+        jac -= forces
+        pos.requires_grad_(False)  
         return jac.detach().cpu().numpy().flatten()
 
-    def hess(self, pos, boxsize):
+    def hess(self, pos, boxsize):  
         def energy(pos):
             graph = self.graph_constructor.create_graphs(pos.reshape(-1,3), boxsize)
             graph.ndata['species'] = self.species_tensor
             return self.model(graph, forces=False)
         return hessian(energy, pos.flatten())
-    
-    def minimize(self, pos, boxsize, method='CG'):
-        sol = minimize(self.energy_np, pos.cpu().numpy().flatten(), args=boxsize, method=method,
-                       jac=self.jac_np)
-        return torch.tensor(sol.x, dtype=torch.float, device=self.device).reshape(-1,3)
 
-    def log_energy(self, pos, boxsize):
-        with torch.no_grad():
-            energy = self.forward(pos, boxsize, forces=False)
-        logging.info(f'Energy: {energy*627.5:.2f}')
+    def minimize(self, pos, boxsize, method='CG'):
+        def energy_np_cpu(pos_flat, boxsize):
+            pos_flat = torch.from_numpy(pos_flat.astype(np.float32)).to(self.device)
+            energy = self.energy_np(pos_flat, boxsize)
+            return energy.cpu().numpy() if isinstance(energy, torch.Tensor) else energy
+
+        sol = minimize(energy_np_cpu, pos.cpu().numpy().flatten(), args=boxsize, method=method, jac=self.jac_np)
+        return torch.tensor(sol.x, dtype=torch.float, device=self.device).reshape(-1,3)
 
     def calc_constraints(self, pos):
         return sum([constraint(pos) for constraint in self.constraints])
+

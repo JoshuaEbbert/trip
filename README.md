@@ -4,10 +4,10 @@
 
 1. Clone the repository
     ```
-    git clone https://github.com/bhedelius/TrIP/
+    git clone https://github.com/JoshuaEbbert/trip.git
     ```
     
-2. Put the model parameters file in the results folder
+2. Put the TrIP 1.0 model parameters file in the results folder or use TrIP 2.0 model parameters in /results
 
     ```
     mkdir results
